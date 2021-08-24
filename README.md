@@ -1,6 +1,6 @@
 # PollyScripts
 
-Base logic + scripts to pass text through Amazon Polly.
+Base logic + scripts for bulk TTS synthesis through Amazon Polly.
 
 Scripts are located in the `scripts` directory.
 
