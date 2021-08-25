@@ -27,3 +27,7 @@ polly_scripts-*.tar
 
 # Mac garbage
 .DS_Store
+
+# Script output
+/output
+/output_*

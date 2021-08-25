@@ -1,17 +1,23 @@
 defmodule GlStationNames do
+  @moduledoc """
+  Synthesizes all Green Line station names, and converts them from mp3 to
+  wav, as well as to a lower bitrate mono-channel wav.
+  """
+
   alias PollyScripts.Polly
 
-  def synthesize_all_to_files(station_names, cwd) do
-    mp3_dir = Path.join(cwd, "mp3")
-    wav_dir = Path.join(cwd, "wav")
-    compliant_wav_dir = Path.join(cwd, "compliant_wav")
+  def synthesize_all_to_files(station_names, output_dir) do
+    mp3_dir = Path.join(output_dir, "mp3")
+    wav_dir = Path.join(output_dir, "wav")
+    compliant_wav_dir = Path.join(output_dir, "compliant_wav")
     prepare_dir(mp3_dir)
     prepare_dir(wav_dir)
     prepare_dir(compliant_wav_dir)
 
     failed =
       station_names
-      |> Enum.map(&synthesize_to_file(&1, mp3_dir))
+      |> Task.async_stream(&synthesize_to_file(&1, mp3_dir), timeout: :infinity)
+      |> Enum.map(&elem(&1, 1))
       |> Enum.zip(station_names)
       |> Enum.flat_map(fn
         {:ok, _} -> []
@@ -20,7 +26,7 @@ defmodule GlStationNames do
 
     case failed do
       [] ->
-        IO.puts("TTS syntehesis succeeded.")
+        IO.puts("TTS synthesis succeeded.")
 
       failed ->
         IO.puts("#{length(failed)} station names failed to synthesize to file.")
@@ -50,7 +56,7 @@ defmodule GlStationNames do
     |> Enum.map(&elem(&1, 0))
     |> case do
       [] ->
-        IO.puts("wav conversion succeeded.")
+        IO.puts("compliant wav conversion succeeded.")
 
       failed ->
         IO.puts(
@@ -87,7 +93,11 @@ defmodule GlStationNames do
       |> Path.basename(".mp3")
       |> then(fn filename -> Path.join(wav_dir, filename <> ".wav") end)
 
-    {_, exit_status} = System.cmd("ffmpeg", ["-i", mp3_path] ++ conversion_args ++ [wav_path], stderr_to_stdout: true)
+    {_, exit_status} =
+      System.cmd("ffmpeg", ["-i", mp3_path] ++ conversion_args ++ [wav_path],
+        stderr_to_stdout: true
+      )
+
     {wav_path, exit_status}
   end
 
@@ -178,4 +188,6 @@ station_names = [
   "Heath Street"
 ]
 
-GlStationNames.synthesize_all_to_files(station_names, File.cwd!())
+output_dir = Path.join(File.cwd!(), "output")
+
+GlStationNames.synthesize_all_to_files(station_names, output_dir)
