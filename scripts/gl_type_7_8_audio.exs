@@ -7,7 +7,7 @@ defmodule GlType78Announcements do
   alias PollyScripts.Polly
 
   def synthesize_all_to_files(announcements, output_dir) do
-    mp3_dir = Path.join(output_dir, "mp3")
+    mp3_dir = Path.join(output_dir, "original_mp3")
     compliant_wav_dir = Path.join(output_dir, "compliant_wav")
     prepare_dir(mp3_dir)
     prepare_dir(compliant_wav_dir)
@@ -118,47 +118,16 @@ defmodule GlType78Announcements do
   end
 end
 
-announcements = [
+prefixes = [
   "This is:",
   "Approaching:",
   "Next stop:",
   "Next and last stop:",
   "The destination of this train is:",
-  "This train will run express to:",
-  "This is an express train. This train will not stop.",
-  "Doors will open on the left.",
-  "Doors will open on the right.",
-  "Doors will open on the left or right.",
-  "Doors will open on both sides.",
-  "This is the last stop.",
-  "Thank you for riding the T.",
-  "This train is being taken out of service. We apologize for the inconvenience.",
-  "This train is out of service. Please do not board this train.",
-  "This is a test message.",
-  "Please watch your step when exiting the vehicle.",
-  "Face coverings are required on MBTA vehicles, and in stations.",
-  "Please remember to take your personal belongings before exiting the train.",
-  "Please help keep this train clean by disposing your trash in platform waste receptacles.",
-  "Please report any suspicious or unattended packages to an MBTA employee.",
-  "Customers are required to make priority seating available for seniors and persons with disabilities.",
-  "No smoking please.",
-  "Change here for bus connections.",
-  "Change here for the Red Line, SL5, and bus connections.",
-  "Change here for the Orange Line and bus connections.",
-  "Change here for the SL5 and bus connections.",
-  "Change here for the Blue Line and bus connections.",
-  "Change here for the Orange Line, bus connections, Commuter Rail, and Amtrak.",
-  "This is the last chance to transfer to Green Line service to Boston College and Cleveland Circle.",
-  "This is the last chance to transfer to Green Line service to Cleveland Circle and Riverside.",
-  "This is the last chance to transfer to Green Line service to Boston College and Riverside.",
-  "This is the last chance to transfer to Green Line service to Boston College, Cleveland Circle, and Riverside.",
-  "This is the last chance to transfer to Green Line service to Heath Street.",
-  "This is the last chance to transfer to Green Line service to Cleveland Circle and Heath Street.",
-  "This is the last chance to transfer to Green Line service to Riverside.",
-  "This is the last chance to transfer to Green Line service to Riverside and Heath Street.",
-  "This is the last chance to transfer to Green Line service to Boston College.",
-  "This is the last chance to transfer to Green Line service to Union Square.",
-  "This is the last chance to transfer to Green Line service to Medford/Tufts.",
+  "This train will run express to:"
+]
+
+stops = [
   "Medford/Tufts",
   "Ball Square",
   "Magoun Square",
@@ -231,7 +200,44 @@ announcements = [
   "Mission Park",
   "Riverway",
   "Back of the Hill",
-  "Heath Street/VA Medical Center",
+  "Heath Street/VA Medical Center"
+]
+
+advisories = [
+  "This is an express train. This train will not stop.",
+  "Doors will open on the left.",
+  "Doors will open on the right.",
+  "Doors will open on the left or right.",
+  "Doors will open on both sides.",
+  "This is the last stop.",
+  "Thank you for riding the T.",
+  "This train is being taken out of service. We apologize for the inconvenience.",
+  "This train is out of service. Please do not board this train.",
+  "This is a test message.",
+  "Please watch your step when exiting the vehicle.",
+  "Face coverings are required on MBTA vehicles, and in stations.",
+  "Please remember to take your personal belongings before exiting the train.",
+  "Please help keep this train clean by disposing your trash in platform waste receptacles.",
+  "Please report any suspicious or unattended packages to an MBTA employee.",
+  "Customers are required to make priority seating available for seniors and persons with disabilities.",
+  "No smoking please.",
+  "Change here for bus connections.",
+  "Change here for the Red Line, SL5, and bus connections.",
+  "Change here for the Orange Line and bus connections.",
+  "Change here for the SL5 and bus connections.",
+  "Change here for the Blue Line and bus connections.",
+  "Change here for the Orange Line, bus connections, Commuter Rail, and Amtrak.",
+  "This is the last chance to transfer to Green Line service to Boston College and Cleveland Circle.",
+  "This is the last chance to transfer to Green Line service to Cleveland Circle and Riverside.",
+  "This is the last chance to transfer to Green Line service to Boston College and Riverside.",
+  "This is the last chance to transfer to Green Line service to Boston College, Cleveland Circle, and Riverside.",
+  "This is the last chance to transfer to Green Line service to Heath Street.",
+  "This is the last chance to transfer to Green Line service to Cleveland Circle and Heath Street.",
+  "This is the last chance to transfer to Green Line service to Riverside.",
+  "This is the last chance to transfer to Green Line service to Riverside and Heath Street.",
+  "This is the last chance to transfer to Green Line service to Boston College.",
+  "This is the last chance to transfer to Green Line service to Union Square.",
+  "This is the last chance to transfer to Green Line service to Medford/Tufts.",
   "Stand clear of the closing doors.",
   "For elevator access, exit to the left",
   "For elevator access, exit to the right",
@@ -239,6 +245,8 @@ announcements = [
   "For elevator access, exit to the left onto the center platform",
   "Please request your stop for all street-level stations."
 ]
+
+announcements = prefixes ++ stops ++ advisories
 
 output_dir = Path.join([File.cwd!(), "output", "type_7_8"])
 
