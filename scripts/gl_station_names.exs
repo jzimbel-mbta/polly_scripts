@@ -17,7 +17,7 @@ defmodule GlStationNames do
     failed =
       station_names
       |> Task.async_stream(&synthesize_to_file(&1, mp3_dir), timeout: :infinity)
-      |> Enum.map(&elem(&1, 1))
+      |> Enum.map(fn {:ok, result} -> result end)
       |> Enum.zip(station_names)
       |> Enum.flat_map(fn
         {:ok, _} -> []
@@ -45,7 +45,7 @@ defmodule GlStationNames do
 
       failed ->
         IO.puts(
-          "#length(failed) mp3 files failed to convert to wav. Failed to produce the following:"
+          "#{length(failed)} mp3 files failed to convert to wav. Failed to produce the following:"
         )
 
         Enum.each(failed, &IO.inspect/1)
@@ -60,7 +60,7 @@ defmodule GlStationNames do
 
       failed ->
         IO.puts(
-          "#length(failed) mp3 files failed to convert to wav. Failed to produce the following:"
+          "#{length(failed)} mp3 files failed to convert to wav. Failed to produce the following:"
         )
 
         Enum.each(failed, &IO.inspect/1)
@@ -73,10 +73,17 @@ defmodule GlStationNames do
   end
 
   defp synthesize_to_file(station_name, output_dir) do
-    with {:ok, audio_data} <- Polly.synthesize(station_name) do
-      station_name
-      |> get_file_path(output_dir)
-      |> File.write(audio_data)
+    station_name
+    |> clean_up_text_for_synthesis()
+    |> Polly.synthesize()
+    |> case do
+      {:ok, audio_data} ->
+        station_name
+        |> get_file_path(output_dir)
+        |> File.write(audio_data)
+
+      error ->
+        error
     end
   end
 
@@ -93,10 +100,9 @@ defmodule GlStationNames do
       |> Path.basename(".mp3")
       |> then(fn filename -> Path.join(wav_dir, filename <> ".wav") end)
 
-    {_, exit_status} =
-      System.cmd("ffmpeg", ["-i", mp3_path] ++ conversion_args ++ [wav_path],
-        stderr_to_stdout: true
-      )
+    cmd_args = ["-i", mp3_path] ++ conversion_args ++ [wav_path]
+
+    {_, exit_status} = System.cmd("ffmpeg", cmd_args, stderr_to_stdout: true)
 
     {wav_path, exit_status}
   end
@@ -105,10 +111,14 @@ defmodule GlStationNames do
     Path.join(output_dir, sanitize_filename(station_name) <> ".mp3")
   end
 
+  defp clean_up_text_for_synthesis(text) do
+    String.replace(text, ~r|/|, ", ")
+  end
+
   defp sanitize_filename(string) do
     string
     |> String.replace(~r|[/\s]|, "-")
-    |> String.replace(~r|[\.'ʼ]|, "")
+    |> String.replace(~r|[\.'ʼ,:]|, "")
   end
 end
 
@@ -169,7 +179,7 @@ station_names = [
   "Beaconsfield",
   "Reservoir",
   "Chestnut Hill",
-  "Newton Center",
+  "Newton Centre",
   "Newton Highlands",
   "Eliot",
   "Waban",
@@ -188,6 +198,6 @@ station_names = [
   "Heath Street"
 ]
 
-output_dir = Path.join(File.cwd!(), "output")
+output_dir = Path.join([File.cwd!(), "output", "gl_station_names"])
 
 GlStationNames.synthesize_all_to_files(station_names, output_dir)
