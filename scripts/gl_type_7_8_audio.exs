@@ -32,7 +32,8 @@ defmodule GlType78Announcements do
         Enum.each(failed, fn {name, error} -> IO.inspect(error, label: name) end)
     end
 
-    compliant_wav_results = convert_all_to_wav(mp3_dir, compliant_wav_dir, ~w[-ar 11025 -ac 1])
+    compliant_wav_results =
+      convert_all_to_wav(mp3_dir, compliant_wav_dir, ~w[-filter:a volume=3.0 -ar 11025 -ac 1])
 
     compliant_wav_results
     |> Enum.reject(&match?({_, 0}, &1))
@@ -119,22 +120,25 @@ defmodule GlType78Announcements do
 end
 
 defmodule Text do
+  @type t :: String.t() | {original :: String.t(), [ssml: String.t()]}
+
+  def to_ssml_sentence({_, [ssml: _]} = text), do: text
+
+  def to_ssml_sentence(text) when is_binary(text), do: {text, [ssml: ~s(<s>#{text}</s>)]}
+
   @doc """
   Adds a short pause to the end of a piece of text, converting to SSML as needed.
 
   The type 7/8 on-vehicle audio player tends to slightly cut off the end of playback;
   this addresses that problem.
   """
-  def add_trailing_pause(text, pause_length_ms \\ 200)
-
-  def add_trailing_pause({original, [ssml: "<speak>" <> ssml_rest]}) do
-    ">kaeps/<" <> reversed_content = String.reverse(ssml_rest)
-    content = String.reverse(reversed_content)
-    {original, [ssml: ~s(<speak>#{content}<break time="#{pause_length_ms}ms" /></speak>)]}
+  @spec add_trailing_pause(t(), non_neg_integer()) :: t()
+  def add_trailing_pause({original, [ssml: ssml_fragment]}, pause_length_ms \\ 200) do
+    {original, [ssml: ~s(#{ssml_fragment}<break time="#{pause_length_ms}ms" />)]}
   end
 
-  def add_trailing_pause(content) do
-    {content, [ssml: ~s(<speak>#{content}<break time="#{pause_length_ms}ms" /></speak>)]}
+  def wrap_speak({original, [ssml: ssml_fragment]}) do
+    {original, [ssml: ~s(<speak>#{ssml_fragment}</speak>)]}
   end
 end
 
@@ -217,25 +221,33 @@ stops =
     "Museum of Fine Arts",
     "Longwood Medical Area",
     "Brigham Circle",
-    {"Fenwood Road", [ssml: ~S(<speak><prosody rate="slow">Fenwood Road</prosody></speak>)]},
+    {"Fenwood Road", [ssml: ~S(<prosody rate="slow"><s>Fenwood Road</s></prosody>)]},
     "Mission Park",
     "Riverway",
     "Back of the Hill",
     "Heath Street/VA Medical Center"
   ]
+  |> Enum.map(&Text.to_ssml_sentence/1)
   |> Enum.map(&Text.add_trailing_pause/1)
+  |> Enum.map(&Text.wrap_speak/1)
 
 advisories =
   [
-    "This is an express train. This train will not stop.",
+    {"This is an express train. This train will not stop.",
+     [ssml: ~S(<s>This is an express train</s><s>This train will not stop</s>)]},
     "Doors will open on the left.",
     "Doors will open on the right.",
     "Doors will open on the left or right.",
     "Doors will open on both sides.",
     "This is the last stop.",
     "Thank you for riding the T.",
-    "This train is being taken out of service. We apologize for the inconvenience.",
-    "This train is out of service. Please do not board this train.",
+    {"This train is being taken out of service. We apologize for the inconvenience.",
+     [
+       ssml:
+         ~S(<s>This train is being taken out of service</s><s>We apologize for the inconvenience</s>)
+     ]},
+    {"This train is out of service. Please do not board this train.",
+     [ssml: ~S(<s>This train is out of service</s><s>Please do not board this train</s>)]},
     "This is a test message.",
     "Please watch your step when exiting the vehicle.",
     "Face coverings are required on MBTA vehicles, and in stations.",
@@ -262,13 +274,15 @@ advisories =
     "This is the last chance to transfer to Green Line service to Union Square.",
     "This is the last chance to transfer to Green Line service to Medford/Tufts.",
     "Stand clear of the closing doors.",
-    "For elevator access, exit to the left",
-    "For elevator access, exit to the right",
-    "For elevator access, exit to the left or right",
-    "For elevator access, exit to the left onto the center platform",
+    "For elevator access, exit to the left.",
+    "For elevator access, exit to the right.",
+    "For elevator access, exit to the left or right.",
+    "For elevator access, exit to the left onto the center platform.",
     "Please request your stop for all street-level stations."
   ]
+  |> Enum.map(&Text.to_ssml_sentence/1)
   |> Enum.map(&Text.add_trailing_pause/1)
+  |> Enum.map(&Text.wrap_speak/1)
 
 announcements = prefixes ++ stops ++ advisories
 

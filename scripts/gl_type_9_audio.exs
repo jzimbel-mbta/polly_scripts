@@ -33,7 +33,11 @@ defmodule GlType9Announcements do
     end
 
     compliant_mp3_results =
-      convert_all_to_compliant_mp3(mp3_dir, compliant_mp3_dir, ~w[-b:a 64k -ar 32000 -ac 1])
+      convert_all_to_compliant_mp3(
+        mp3_dir,
+        compliant_mp3_dir,
+        ~w[-filter:a volume=3.0 -b:a 64k -ar 32000 -ac 1]
+      )
 
     compliant_mp3_results
     |> Enum.reject(&match?({_, 0}, &1))
